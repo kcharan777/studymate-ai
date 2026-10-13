@@ -6,7 +6,7 @@ import time
 import logging
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 import requests
@@ -964,9 +964,20 @@ def generate_additional_quiz():
         for i in range(count)
     ]
 
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    """Serve built frontend static files in production."""
+    if path != "" and (FRONTEND_DIST / path).exists():
+        return send_from_directory(FRONTEND_DIST, path)
+    if (FRONTEND_DIST / "index.html").exists():
+        return send_from_directory(FRONTEND_DIST, "index.html")
     return jsonify({
-        "success": True,
-        "questions": extra_questions,
+        "status": "online",
+        "app": "StudyMate AI",
+        "message": "Backend API is running. Build frontend with 'npm run build' to serve UI.",
     })
 
 
