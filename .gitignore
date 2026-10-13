@@ -1,0 +1,20 @@
+# Python
+backend/__pycache__/
+backend/*.pyc
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/.env
+venv/
+.venv/
+*.pyo
+*.pyd
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+.DS_Store
+
+# Temporary & Logs
+*.log
