@@ -45,6 +45,22 @@ export async function checkHealth() {
   }
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. The server took too long to respond.');
+    }
+    throw err;
+  }
+}
+
 export async function uploadPDF(file) {
   const formData = new FormData();
   formData.append('file', file);
@@ -53,11 +69,11 @@ export async function uploadPDF(file) {
   const customKey = localStorage.getItem(AI_KEY_STORAGE);
   if (customKey) headers['X-AI-Key'] = customKey;
 
-  const res = await fetch(`${API_BASE}/api/upload`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/upload`, {
     method: 'POST',
     headers,
     body: formData,
-  });
+  }, 45000);
 
   const data = await res.json();
   if (!res.ok || !data.success) {
@@ -67,7 +83,7 @@ export async function uploadPDF(file) {
 }
 
 export async function generateStudyKit({ docId, topic, focusUnit, explanationMode = 'all' }) {
-  const res = await fetch(`${API_BASE}/api/study-kit`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/study-kit`, {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify({
@@ -76,7 +92,7 @@ export async function generateStudyKit({ docId, topic, focusUnit, explanationMod
       focus_unit: focusUnit,
       explanation_mode: explanationMode,
     }),
-  });
+  }, 120000);
 
   const data = await res.json();
   if (!res.ok || !data.success) {

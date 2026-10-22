@@ -213,48 +213,54 @@ class DocumentIntelligenceAnalyzer:
         return [(term, count) for term, count in counter.most_common(25) if term.lower() not in title_lower]
 
     def _extract_definitions(self) -> List[Dict[str, Any]]:
-        """Extract defined concepts and their explanatory sentences cleanly."""
+        """Extract defined concepts and their explanatory sentences cleanly and fast without catastrophic backtracking."""
         defs = []
-        # Pattern searching within sentences (no newlines across matched term)
-        pattern = re.compile(
-            r'(?:^|[.!?\n])\s*(?:(?:Chapter|Unit|\d+[\.:]?)\s*)*([A-Z][a-zA-Z0-9\s-]{1,35}?)\s+(?:is defined as|refers to|is the process (?:by which|of)|is known as|can be defined as|represents|signifies)\s+([^.\n]{15,250}\.)',
-            re.IGNORECASE
-        )
+        DEF_TRIGGERS = [
+            " is defined as ", " refers to ", " is the process of ", " is the process by which ",
+            " is known as ", " can be defined as ", " represents ", " signifies "
+        ]
 
         for p_idx, page in enumerate(self.pages):
             text = page.get("text", "")
-            for match in pattern.finditer(text):
-                raw_term = match.group(1).strip()
-                # Clean prefix words like "Introduction to ", "Overview of "
-                clean_term = re.sub(r'^(?:Introduction\s+to|Overview\s+of|Concept\s+of|Study\s+of|Principles?\s+of)\s+', '', raw_term, flags=re.I).strip()
-                clean_term = re.sub(r'^\d+[\.:\s-]*', '', clean_term).strip()
-                definition_body = match.group(2).strip()
-                
-                if 2 < len(clean_term) < 40 and clean_term.lower() not in STOP_WORDS:
-                    full_def = f"{clean_term} is {definition_body}" if not definition_body.lower().startswith("is") else f"{clean_term} {definition_body}"
-                    # Avoid duplicates
-                    if not any(d["term"].lower() == clean_term.lower() for d in defs):
-                        defs.append({
-                            "term": clean_term,
-                            "definition": full_def,
-                            "page": page.get("page_num", p_idx + 1),
-                        })
+            sentences = re.split(r'(?<=[.!?\n])\s+', text)
+            for s in sentences:
+                s_clean = s.strip()
+                if len(s_clean) < 20 or len(s_clean) > 300:
+                    continue
+                s_lower = s_clean.lower()
+                for trigger in DEF_TRIGGERS:
+                    if trigger in s_lower:
+                        idx = s_lower.find(trigger)
+                        raw_term = s_clean[:idx].strip()
+                        clean_term = re.sub(r'^(?:Chapter|Unit|\d+[\.:]?)\s*', '', raw_term, flags=re.I).strip()
+                        clean_term = re.sub(r'^(?:Introduction\s+to|Overview\s+of|Concept\s+of|Study\s+of|Principles?\s+of)\s+', '', clean_term, flags=re.I).strip()
+                        clean_term = re.sub(r'^[^\w]+', '', clean_term).strip()
+                        desc = s_clean[idx + len(trigger):].strip()
+                        if 2 < len(clean_term) < 40 and len(desc) > 10 and clean_term.lower() not in STOP_WORDS:
+                            if not any(d["term"].lower() == clean_term.lower() for d in defs):
+                                defs.append({
+                                    "term": clean_term,
+                                    "definition": f"{clean_term}{trigger}{desc}",
+                                    "page": page.get("page_num", p_idx + 1),
+                                })
+                        break
 
-        # Also search for "Term: Description" style definitions
-        colon_pattern = re.compile(r'(?:^|\n)\s*([A-Z][a-zA-Z0-9\s-]{2,30})\s*:\s*([A-Z][^.\n]{20,200}\.)')
-        for p_idx, page in enumerate(self.pages):
-            text = page.get("text", "")
-            for match in colon_pattern.finditer(text):
-                raw_term = match.group(1).strip()
-                clean_term = re.sub(r'^(?:Introduction\s+to|Overview\s+of|Section\s+\d+|Unit\s+\d+)\s*', '', raw_term, flags=re.I).strip()
-                clean_term = re.sub(r'^\d+[\.:\s-]*', '', clean_term).strip()
-                desc = match.group(2).strip()
-                if 2 < len(clean_term) < 35 and clean_term.lower() not in STOP_WORDS and not any(d["term"].lower() == clean_term.lower() for d in defs):
-                    defs.append({
-                        "term": clean_term,
-                        "definition": f"{clean_term}: {desc}",
-                        "page": page.get("page_num", p_idx + 1),
-                    })
+            # Also search for "Term: Description" style definitions
+            for line in text.splitlines():
+                line_str = line.strip()
+                if ":" in line_str and not line_str.startswith("http") and 25 < len(line_str) < 250:
+                    parts = line_str.split(":", 1)
+                    raw_term = parts[0].strip()
+                    desc = parts[1].strip()
+                    clean_term = re.sub(r'^(?:Introduction\s+to|Overview\s+of|Section\s+\d+|Unit\s+\d+)\s*', '', raw_term, flags=re.I).strip()
+                    clean_term = re.sub(r'^\d+[\.:\s-]*', '', clean_term).strip()
+                    if 2 < len(clean_term) < 35 and len(desc) > 15 and clean_term and clean_term[0].isupper() and clean_term.lower() not in STOP_WORDS:
+                        if not any(d["term"].lower() == clean_term.lower() for d in defs):
+                            defs.append({
+                                "term": clean_term,
+                                "definition": f"{clean_term}: {desc}",
+                                "page": page.get("page_num", p_idx + 1),
+                            })
 
         # Fallback: if no formal definition pattern matched, synthesize from paragraphs
         if not defs and self.paragraphs:

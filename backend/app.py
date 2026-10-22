@@ -816,5 +816,6 @@ def serve_frontend(path):
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
+    debug_mode = os.getenv("FLASK_DEBUG", "0") == "1"
     print(f">> StudyMate AI backend starting on http://localhost:{port}")
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
