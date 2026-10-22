@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import HeroGenerator from './components/HeroGenerator';
 import StudyWorkspace from './components/StudyWorkspace';
 import UserGuideModal from './components/UserGuideModal';
+import AISettingsModal from './components/AISettingsModal';
 import { checkHealth } from './services/api';
 
 const STORAGE_KEY = 'studymate_saved_kits_v1';
@@ -13,6 +14,7 @@ export default function App() {
   const [docData, setDocData] = useState(null);
   const [savedKits, setSavedKits] = useState([]);
   const [showGuide, setShowGuide] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     // Check backend health
@@ -77,6 +79,7 @@ export default function App() {
         backendStatus={backendStatus}
         onReset={handleReset}
         onOpenHelp={() => setShowGuide(true)}
+        onOpenSettings={() => setShowSettings(true)}
         activeKit={activeKit}
       />
 
@@ -99,13 +102,20 @@ export default function App() {
 
       <footer style={{ borderTop: '1px solid var(--border)', background: '#ffffff', padding: '1.5rem 2rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
         <p>
-          <strong>StudyMate AI</strong> — Built for college students, academic researchers, and university exam preparation.
+          <strong>StudyMate AI</strong> — Built for college students, academic researchers, and university exam preparation across all disciplines.
         </p>
       </footer>
 
       <UserGuideModal
         isOpen={showGuide}
         onClose={() => setShowGuide(false)}
+      />
+
+      <AISettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        backendStatus={backendStatus}
+        onStatusUpdated={setBackendStatus}
       />
     </div>
   );

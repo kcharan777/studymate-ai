@@ -3,12 +3,12 @@ import { UploadCloud, FileText, Sparkles, CheckCircle2, X, ArrowRight, BookOpen,
 import { uploadPDF, generateStudyKit } from '../services/api';
 
 const QUICK_TOPICS = [
-  'Normalization in DBMS (1NF, 2NF, 3NF, BCNF)',
-  'CPU Scheduling Algorithms (FCFS, SJF, RR)',
-  'OSI 7-Layer Architecture & TCP/IP',
-  'Software Development Life Cycle (SDLC)',
-  'Binary Search Trees & AVL Rotations',
-  'Deadlock Detection & Banker Algorithm',
+  'Photosynthesis & Calvin Cycle (Biology)',
+  'Newton\'s Laws of Motion (Physics)',
+  'World War I & Versailles Treaty (History)',
+  'Database Normalization (DBMS)',
+  'Macroeconomics & Inflation Control',
+  'Data Structures: Binary Trees & Graphs',
 ];
 
 export default function HeroGenerator({ onKitGenerated, savedKits = [], onLoadSavedKit }) {
@@ -206,7 +206,7 @@ export default function HeroGenerator({ onKitGenerated, savedKits = [], onLoadSa
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g., Normalization in DBMS, OSI Model, SDLC..."
+                placeholder="e.g., Photosynthesis, Newton's Laws, World History, Data Structures..."
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
               />

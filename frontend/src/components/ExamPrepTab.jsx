@@ -127,7 +127,7 @@ export default function ExamPrepTab({ kit }) {
         <ul style={{ paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.92rem', color: '#14532d' }}>
           <li>Always write the formal definition verbatim in the opening paragraph.</li>
           <li>Draw neat labeled block diagrams or flowcharts using a pencil for any question of 5 marks and above.</li>
-          <li>Never leave partial functional dependencies unaddressed in DBMS questions; clearly label candidate keys.</li>
+          <li>Structure long answers with clear headings, comparison tables, and concise summary bullet points.</li>
           <li>Manage time: allocate 1.5 minutes per mark (e.g. 7.5 mins for 5-mark, 15 mins for 10-mark).</li>
         </ul>
       </div>

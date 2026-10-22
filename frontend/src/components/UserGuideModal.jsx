@@ -24,7 +24,7 @@ export default function UserGuideModal({ isOpen, onClose }) {
             </h4>
             <p style={{ color: 'var(--text-muted)' }}>
               • <strong>With PDF:</strong> Upload any lecture note, syllabus unit, or assignment document. All explanations, quizzes, and diagrams are directly extracted and cited with page references.<br />
-              • <strong>Topic-Only Mode:</strong> Type any topic (e.g. <em>Normalization in DBMS</em>) without a PDF to generate a full curriculum study kit.
+              • <strong>Topic-Only Mode:</strong> Type any topic (e.g. <em>Photosynthesis, Newton's Laws, or Database Normalization</em>) without a PDF to generate a full curriculum study kit.
             </p>
           </div>
 

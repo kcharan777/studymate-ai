@@ -5,17 +5,42 @@
 
 const API_BASE = ''; // Proxied via Vite config to http://localhost:5000
 
+export const AI_KEY_STORAGE = 'studymate_custom_ai_key';
+export const AI_PROVIDER_STORAGE = 'studymate_custom_ai_provider';
+
+function getAIHeaders() {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  try {
+    const key = localStorage.getItem(AI_KEY_STORAGE);
+    const provider = localStorage.getItem(AI_PROVIDER_STORAGE);
+    if (key) {
+      headers['X-AI-Key'] = key.trim();
+    }
+    if (provider) {
+      headers['X-AI-Provider'] = provider.trim();
+    }
+  } catch (e) {
+    // ignore
+  }
+  return headers;
+}
+
 export async function checkHealth() {
   try {
-    const res = await fetch(`${API_BASE}/health`);
+    const res = await fetch(`${API_BASE}/health`, {
+      headers: getAIHeaders(),
+    });
     if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
     return await res.json();
   } catch (err) {
     console.warn('Backend health check error:', err);
     return {
       status: 'offline',
-      openrouter_configured: false,
-      active_model: 'offline-mode',
+      active_provider: 'offline_analyzer',
+      provider_label: 'Smart Offline Analyzer',
+      is_ai_connected: false,
     };
   }
 }
@@ -24,8 +49,13 @@ export async function uploadPDF(file) {
   const formData = new FormData();
   formData.append('file', file);
 
+  const headers = {};
+  const customKey = localStorage.getItem(AI_KEY_STORAGE);
+  if (customKey) headers['X-AI-Key'] = customKey;
+
   const res = await fetch(`${API_BASE}/api/upload`, {
     method: 'POST',
+    headers,
     body: formData,
   });
 
@@ -39,9 +69,7 @@ export async function uploadPDF(file) {
 export async function generateStudyKit({ docId, topic, focusUnit, explanationMode = 'all' }) {
   const res = await fetch(`${API_BASE}/api/study-kit`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAIHeaders(),
     body: JSON.stringify({
       doc_id: docId,
       topic,
@@ -60,9 +88,7 @@ export async function generateStudyKit({ docId, topic, focusUnit, explanationMod
 export async function askAITutor({ question, docId, topic, history = [] }) {
   const res = await fetch(`${API_BASE}/api/ask`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAIHeaders(),
     body: JSON.stringify({
       question,
       doc_id: docId,
@@ -78,14 +104,13 @@ export async function askAITutor({ question, docId, topic, history = [] }) {
   return data;
 }
 
-export async function regenerateSection({ section, topic, customInstruction = '' }) {
+export async function regenerateSection({ section, docId, topic, customInstruction = '' }) {
   const res = await fetch(`${API_BASE}/api/regenerate`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAIHeaders(),
     body: JSON.stringify({
       section,
+      doc_id: docId,
       topic,
       custom_instruction: customInstruction,
     }),
@@ -98,13 +123,12 @@ export async function regenerateSection({ section, topic, customInstruction = ''
   return data;
 }
 
-export async function generateMoreQuiz({ topic, difficulty = 'medium', count = 5 }) {
+export async function generateMoreQuiz({ docId, topic, difficulty = 'medium', count = 5 }) {
   const res = await fetch(`${API_BASE}/api/quiz`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAIHeaders(),
     body: JSON.stringify({
+      doc_id: docId,
       topic,
       difficulty,
       count,
@@ -116,6 +140,24 @@ export async function generateMoreQuiz({ topic, difficulty = 'medium', count = 5
     throw new Error(data.error || 'Failed to generate extra quiz questions');
   }
   return data.questions;
+}
+
+export async function testAPIKey({ apiKey, provider }) {
+  const res = await fetch(`${API_BASE}/api/settings/test-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey, provider }),
+  });
+  return await res.json();
+}
+
+export async function saveAPIKey({ apiKey, provider }) {
+  const res = await fetch(`${API_BASE}/api/settings/save-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey, provider }),
+  });
+  return await res.json();
 }
 
 export function getPDFUrl(docId) {
